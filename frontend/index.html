@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crowdfunding Blockchain</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+        .campaign-card {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        input {
+            width: 90%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+        button {
+            padding: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Crowdfunding DApp</h1>
+        <button onclick="connectWallet()">Connect Wallet</button>
+        <p id="wallet-address"></p>
+
+        <h2>Buat Campaign Baru</h2>
+        <input type="text" id="title" placeholder="Judul"><br>
+        <input type="text" id="description" placeholder="Deskripsi"><br>
+        <input type="number" id="goal" placeholder="Target Dana (ETH)"><br>
+        <input type="datetime-local" id="deadline"><br>
+        <button onclick="createCampaign()">Buat Campaign</button>
+
+        <h2>Daftar Campaign</h2>
+        <div id="campaign-list"></div>
+    </div>
+
+    <script>
+        let web3;
+        let contract;
+        const contractAddress = "0xa2b757BFE2252d847b2912F7F47f76520e927490"; // Ganti dengan alamat kontrak yang benar
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                await window.ethereum.request({ method: "eth_requestAccounts" });
+                const accounts = await web3.eth.getAccounts();
+                document.getElementById("wallet-address").innerText = "Wallet: " + accounts[0];
+
+                const contractABI = [ 
+                    {
+                        "inputs": [
+                            { "internalType": "string", "name": "_title", "type": "string" },
+                            { "internalType": "string", "name": "_description", "type": "string" },
+                            { "internalType": "uint256", "name": "_goal", "type": "uint256" },
+                            { "internalType": "uint256", "name": "_deadline", "type": "uint256" }
+                        ],
+                        "name": "createCampaign",
+                        "outputs": [],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [{ "internalType": "uint256", "name": "_id", "type": "uint256" }],
+                        "name": "pledge",
+                        "outputs": [],
+                        "stateMutability": "payable",
+                        "type": "function"
+                    }
+                ];
+
+                contract = new web3.eth.Contract(contractABI, contractAddress);
+                loadCampaigns();
+            } else {
+                alert("Metamask tidak ditemukan");
+            }
+        }
+
+        async function createCampaign() {
+    const accounts = await web3.eth.getAccounts();
+    if (!accounts.length) {
+        alert("Wallet tidak terhubung!");
+        return;
+    }
+
+    const title = document.getElementById("title").value;
+    const description = document.getElementById("description").value;
+    
+    // Konversi angka ke string agar tidak campur dengan BigInt
+    const goal = web3.utils.toWei(document.getElementById("goal").value, "ether"); 
+    const deadline = Math.floor(new Date(document.getElementById("deadline").value).getTime() / 1000); 
+
+    console.log("Data yang dikirim:", { title, description, goal, deadline });
+
+    try {
+        const gasEstimate = await contract.methods.createCampaign(title, description, goal, deadline)
+            .estimateGas({ from: accounts[0] });
+
+        const gasPrice = await web3.eth.getGasPrice();
+
+        await contract.methods.createCampaign(title, description, goal, deadline)
+            .send({
+                from: accounts[0],
+                gas: Math.floor(Number(gasEstimate) * 1.2), // Pastikan bukan BigInt
+                gasPrice: gasPrice.toString() // Pastikan dalam string
+            });
+
+        alert("Campaign berhasil dibuat!");
+    } catch (error) {
+        console.error("Error saat membuat campaign:", error);
+        alert("Gagal membuat campaign. Cek console untuk detail.");
+    }
+}
+
+
+
+
+        function addCampaignCard(title, description, goal, deadline) {
+            const campaignList = document.getElementById("campaign-list");
+            const card = document.createElement("div");
+            card.className = "campaign-card";
+            card.innerHTML = `
+                <h3>${title}</h3>
+                <p>${description}</p>
+                <p>Target: ${goal} ETH</p>
+                <p>Deadline: ${new Date(deadline).toLocaleString()}</p>
+            `;
+            campaignList.appendChild(card);
+        }
+
+        async function loadCampaigns() {
+            if (!contract) return;
+
+            const campaignList = document.getElementById("campaign-list");
+            campaignList.innerHTML = "";
+
+            try {
+                let i = 0;
+                while (true) {
+                    try {
+                        const campaign = await contract.methods.campaigns(i).call();
+                        if (!campaign.title) break;
+                        addCampaignCard(campaign.title, campaign.description, web3.utils.fromWei(campaign.goal, "ether"), campaign.deadline);
+                    } catch (error) { break; }
+                    i++;
+                }
+            } catch (error) {
+                console.error("Error loading campaigns:", error);
+            }
+        }
+    </script>
+</body>
+</html>
