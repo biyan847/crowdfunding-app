@@ -94,6 +94,7 @@
         }
 
         
+
         async function createCampaign() {
     const accounts = await web3.eth.getAccounts();
     if (!accounts.length) {
@@ -104,7 +105,6 @@
     const title = document.getElementById("title").value;
     const description = document.getElementById("description").value;
     
-    // Konversi angka ke string agar tidak campur dengan BigInt
     const goal = web3.utils.toWei(document.getElementById("goal").value, "ether"); 
     const deadline = Math.floor(new Date(document.getElementById("deadline").value).getTime() / 1000); 
 
@@ -119,16 +119,27 @@
         await contract.methods.createCampaign(title, description, goal, deadline)
             .send({
                 from: accounts[0],
-                gas: Math.floor(Number(gasEstimate) * 1.2), // Pastikan bukan BigInt
-                gasPrice: gasPrice.toString() // Pastikan dalam string
+                gas: Math.floor(Number(gasEstimate) * 1.2),
+                gasPrice: gasPrice.toString()
             });
 
         alert("Campaign berhasil dibuat!");
+
+        // **Tambahkan campaign baru ke daftar tanpa reload halaman**
+        addCampaignCard(title, description, web3.utils.fromWei(goal, "ether"), deadline);
+
+        // **Reset input setelah campaign dibuat**
+        document.getElementById("title").value = "";
+        document.getElementById("description").value = "";
+        document.getElementById("goal").value = "";
+        document.getElementById("deadline").value = "";
+        
     } catch (error) {
         console.error("Error saat membuat campaign:", error);
         alert("Gagal membuat campaign. Cek console untuk detail.");
     }
 }
+
 
         function addCampaignCard(title, description, goal, deadline) {
             const campaignList = document.getElementById("campaign-list");
