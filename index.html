@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crowdfunding Blockchain</title>
+    
+    <!-- Mengimpor library Web3 untuk berinteraksi dengan blockchain -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    
+    <!-- Menghubungkan file CSS untuk styling -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Crowdfunding DApp</h1>
+        
+        <!-- Tombol untuk menghubungkan dompet Web3 -->
+        <button onclick="connectWallet()">Connect Wallet</button>
+        <p id="wallet-address"></p>
+        
+        <h2>Buat Campaign Baru</h2>
+        <!-- Form untuk membuat campaign baru -->
+        <input type="text" id="title" placeholder="Judul"><br>
+        <input type="text" id="description" placeholder="Deskripsi"><br>
+        <input type="number" id="goal" placeholder="Target Dana (ETH)"><br>
+        <input type="datetime-local" id="deadline"><br>
+        <button onclick="createCampaign()">Buat Campaign</button>
+
+        <h2>Daftar Campaign</h2>
+        <!-- Tempat untuk menampilkan daftar campaign yang ada -->
+        <div id="campaign-list"></div>
+    </div>
+
+    <!-- Menghubungkan file JavaScript untuk interaksi -->
+    <script src="script.js"></script>
+</body>
+</html>
